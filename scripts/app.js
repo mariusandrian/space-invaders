@@ -8,7 +8,10 @@ const arrowKeys = {
     right:39
 };
 
-const arrowKeysArray = ['38', '40', '37', '39'];
+const frameSize = {
+    height: 500,
+    width: 400
+};
 
 class component {
     constructor (width, height, color, x, y) {
@@ -50,14 +53,20 @@ class component {
         this.speedX = 0;
         this.speedY = 0;
     }
+    checkCollision () {
+        if (this.x <= 0) {this.x = 0}
+        else if (this.x + myGamePiece.width >= frameSize.width) {this.x = frameSize.width - myGamePiece.width}
+        else if (this.y <= 0) {this.y = 0}
+        else if (this.y + myGamePiece.height >= frameSize.height) {this.y = frameSize.height - myGamePiece.height}; 
+    }
 };
 
 
 const myGameArea = {
     canvas : document.createElement("canvas"),
     start () {
-      this.canvas.width = 400;
-      this.canvas.height = 500;
+      this.canvas.width = frameSize.width;
+      this.canvas.height = frameSize.height;
       this.context = this.canvas.getContext("2d");
       document.body.insertBefore(this.canvas, document.body.childNodes[0]);
       this.interval = setInterval(updateGameArea,16);
@@ -77,8 +86,11 @@ const myGameArea = {
 const updateGameArea = () => {
     myGameArea.clear();
     myGamePiece.resetSpeed();
+    
     myGamePiece.updatePosition();
+    // console.log(myGamePiece.y);
     // myGamePiece.x -= 1;
+    myGamePiece.checkCollision();
     myGamePiece.update();
 }
 
