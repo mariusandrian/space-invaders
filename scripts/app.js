@@ -27,19 +27,19 @@ class component {
     }
     updatePosition () {
         // move up
-        if (myGameArea.key && myGameArea.key === arrowKeys.up) {
+        if (myGameArea.key && myGameArea.key[38] === true) {
             this.speedY -= 2;
         }
         //move down
-        if (myGameArea.key && myGameArea.key === arrowKeys.down) {
+        if (myGameArea.key && myGameArea.key[40] === true) {
             this.speedY += 2;
         }
        //move left
-       if (myGameArea.key && myGameArea.key === arrowKeys.left) {
+       if (myGameArea.key && myGameArea.key[37] === true) {
             this.speedX -= 2;
        }
        // move right
-       if (myGameArea.key && myGameArea.key === arrowKeys.right) {
+       if (myGameArea.key && myGameArea.key[39] === true) {
             this.speedX += 2;
        } 
         
@@ -61,14 +61,13 @@ const myGameArea = {
       this.context = this.canvas.getContext("2d");
       document.body.insertBefore(this.canvas, document.body.childNodes[0]);
       this.interval = setInterval(updateGameArea,16);
-      document.addEventListener("keydown", () => {
-          myGameArea.key = event.keyCode;
-        }
-      );
-      document.addEventListener("keyup", () => {
-          myGameArea.key = false;
-        }
-      );
+      document.addEventListener("keydown", (event) => {
+        myGameArea.key = (myGameArea.key || []);
+        myGameArea.key[event.keyCode] = true;
+      });
+      document.addEventListener("keyup", (event) => {
+        myGameArea.key[event.keyCode] = false;
+      });
     },
     clear () {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -81,12 +80,6 @@ const updateGameArea = () => {
     myGamePiece.updatePosition();
     // myGamePiece.x -= 1;
     myGamePiece.update();
-}
-
-const updateUserLocation = (event) => {
-    console.log(event.keyCode);
-    //move up
-    
 }
 
 
