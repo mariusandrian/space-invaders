@@ -28,7 +28,7 @@ class component {
         ctx.fillStyle = this.color;
         ctx.fillRect(this.x, this.y, this.width, this.height);
     }
-    updatePosition () {
+    getSpeed () {
         // move up
         if (myGameArea.key && myGameArea.key[38] === true) {
             this.speedY -= 2;
@@ -45,19 +45,24 @@ class component {
        if (myGameArea.key && myGameArea.key[39] === true) {
             this.speedX += 2;
        } 
+    }
+    updatePosition () {
+        if (this.isCollideWithWall() === false){
+            this.x += this.speedX;
+            this.y += this.speedY;
+        }
         
-        this.x += this.speedX;
-        this.y += this.speedY;
     }
     resetSpeed () {
         this.speedX = 0;
         this.speedY = 0;
     }
-    checkCollision () {
-        if (this.x <= 0) {this.x = 0}
-        else if (this.x + myGamePiece.width >= frameSize.width) {this.x = frameSize.width - myGamePiece.width}
-        else if (this.y <= 0) {this.y = 0}
-        else if (this.y + myGamePiece.height >= frameSize.height) {this.y = frameSize.height - myGamePiece.height}; 
+    isCollideWithWall () {
+        
+        if (this.x + this.speedX < 0 || this.x + this.speedX + myGamePiece.width >= frameSize.width || this.y + this.speedY <= 0 || this.y + this.speedY + myGamePiece.height >= frameSize.height) {
+            return true;
+        }
+        else return false;
     }
 };
 
@@ -86,11 +91,12 @@ const myGameArea = {
 const updateGameArea = () => {
     myGameArea.clear();
     myGamePiece.resetSpeed();
-    
+    myGamePiece.getSpeed();
+    myGamePiece.isCollideWithWall();
     myGamePiece.updatePosition();
     // console.log(myGamePiece.y);
     // myGamePiece.x -= 1;
-    myGamePiece.checkCollision();
+    
     myGamePiece.update();
 }
 
