@@ -2,6 +2,8 @@ console.log('connected');
 let frame = 0;
 let lastFrame = 0;
 let playerShip;
+const enemies = {};
+let enemyCount = 1;
 const arrowKeys = {
     up:38,
     down:40,
@@ -26,7 +28,7 @@ class component {
         this.color = color;
         this.bullets = [];
     }
-    update () {
+    draw () {
         let ctx = myGameArea.context;
         ctx.fillStyle = this.color;
         ctx.fillRect(this.x, this.y, this.width, this.height);
@@ -78,18 +80,39 @@ class component {
     }
 };
 
-// class userBullet extends component {
-//     constructor(x, y) {
-//         super(10, 20, "blue",x , y)
-//         this.speedY = -5;
-//     }
-//     updatePosition () {
-//         this.y += this.speedY;
-//     }
-// }
-// Generate player bullet upon space bar press
+generateEnemy = () => {
+    if (frame > 50 && (frame - lastFrame > 50)) {
+        // console.log('create enemy');
+        let enemyShip = new component(30, 30, "red", Math.round(Math.random() * (frameSize.width-30)), 0);
+        enemyShip.speedY = 2;
+        enemyShip.updatePosition = function () {
+            this.x += this.speedX;
+            this.y += this.speedY;
+        };
+        enemies[enemyCount] = enemyShip;
+        enemyCount++;
+        // console.log(enemies);
+        lastFrame = frame;
+    }
+}
+
+drawAllEnemies = () => {
+    const objects = Object.values(enemies);
+    for (const object of objects) {
+        // console.log('draw enemy');
+        object.draw();
+    }
+}
+
+moveAllEnemies = () => {
+    const objects = Object.values(enemies);
+    for (const object of objects) {
+        // console.log('draw enemy');
+        object.updatePosition();
+    }
+}
 generatePlayerBullet = () => {
-    if ((lastFrame === 0) || (myGameArea.key[32] && (frame - lastFrame > 10))) {
+    if ((myGameArea.key[32] && lastFrame === 0) || (myGameArea.key[32] && (frame - lastFrame > 10))) {
         let bullet = new component(5, 20, "blue",playerShip.x , playerShip.y);
         bullet.speedY = -10;
         lastFrame = frame;
@@ -102,7 +125,7 @@ generatePlayerBullet = () => {
 movePlayerBullet = () => {
     for (let bullet of playerShip.bullets) {
         bullet.y += bullet.speedY;
-        bullet.update();
+        bullet.draw();
     }
 }
 
@@ -131,7 +154,6 @@ const myGameArea = {
         // Press space - code 32 to launch a new bullet
         document.addEventListener("keydown", (event) => {
             myGameArea.key[event.keyCode] = true;
-            console.log('space pressed');
             // if (event.keyCode === 32) {
             //     bulletLaunch = 1;
                 // console.log(bulletLaunch);
@@ -143,6 +165,13 @@ const myGameArea = {
     },
     clear () {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        // Clear enemies that are out of bounds
+        const keys = Object.keys(enemies);
+        for (const key of keys) {
+            if (enemies[key].y > frameSize.height) {
+                delete enemies[key];
+            }
+        }
     },
 };
 
@@ -150,32 +179,26 @@ const myGameArea = {
 const updateGameArea = () => {
     myGameArea.clear();
     playerShip.resetSpeed();
+    generateEnemy();
     generatePlayerBullet();
     playerShip.isShoot();
     movePlayerBullet();
     playerShip.getSpeed();
     playerShip.isCollideWithWall();
     playerShip.updatePosition();
-    playerShip.update();
-    
-    // if (bulletLaunch === 1) {
-    //     console.log('bullet Launch = 1');
-        
-    //     myUserBullet.updatePosition();
-    //     myUserBullet.update();
-    // }
-    // bulletLaunch = 0;
+    playerShip.draw();
+
+    drawAllEnemies();
+    moveAllEnemies();
     frame++;
-    if (frame < 100) {
-        console.log(frame);
-    }
-    
-    
+    // if (frame < 100) {
+    //     console.log(frame);
+    // }   
 }
 
-
+// Start game
 const startGame = () => {
+    // To put in a initialize function
     playerShip = new component(30, 30, "green", 190, 420);
-    // myUserBullet = new userBullet(playerShip.x + 11, playerShip.y - 30);
     myGameArea.start();
 }
