@@ -1,9 +1,12 @@
 console.log('connected');
 let frame = 0;
-let lastFrame = 0;
+let lastEnemyFrame = 0;
+let lastBulletFrame = 0;
 let playerShip;
 const enemies = {};
+const bullets = {};
 let enemyCount = 1;
+let bulletCount = 1;
 const arrowKeys = {
     up:38,
     down:40,
@@ -51,12 +54,12 @@ class component {
             this.speedX += 3;
        } 
     }
-    isShoot () {
-        if (myGameArea.key && myGameArea.key[32] === true) {
+    // isShoot () {
+    //     if (myGameArea.key && myGameArea.key[32] === true) {
             
-            // console.log(this.bullets);
-        }
-    }
+    //         // console.log(this.bullets);
+    //     }
+    // }
     updatePosition () {
         if (this.isCollideWithWall() === false){
             this.x += this.speedX;
@@ -75,24 +78,23 @@ class component {
         }
         else return false;
     }
-    generateBullet () {
-        console.log('bang');
-    }
 };
 
 generateEnemy = () => {
-    if (frame > 50 && (frame - lastFrame > 50)) {
+    // console.log(frame > 50 && (frame - lastEnemyFrame > 50));
+    if (frame > 50 && (frame - lastEnemyFrame > 10)) {
         // console.log('create enemy');
         let enemyShip = new component(30, 30, "red", Math.round(Math.random() * (frameSize.width-30)), 0);
-        enemyShip.speedY = 2;
+        enemyShip.speedY = Math.round(Math.random() * 4) + 4 ;
         enemyShip.updatePosition = function () {
             this.x += this.speedX;
             this.y += this.speedY;
         };
+        console.log('create enemy')
         enemies[enemyCount] = enemyShip;
         enemyCount++;
         // console.log(enemies);
-        lastFrame = frame;
+        lastEnemyFrame = frame;
     }
 }
 
@@ -112,22 +114,46 @@ moveAllEnemies = () => {
     }
 }
 generatePlayerBullet = () => {
-    if ((myGameArea.key[32] && lastFrame === 0) || (myGameArea.key[32] && (frame - lastFrame > 10))) {
-        let bullet = new component(5, 20, "blue",playerShip.x , playerShip.y);
+    if ((myGameArea.key[32] && lastBulletFrame === 0) || (myGameArea.key[32] && (frame - lastBulletFrame > 20))) {
+        console.log('test');
+        let bullet = new component(5, 20, "blue",playerShip.x + 13, playerShip.y);
         bullet.speedY = -10;
-        lastFrame = frame;
-        // console.log(bullet);
-        playerShip.bullets.push(bullet);
-        // console.log(playerShip.bullets);
+        lastBulletFrame = frame;
+        bullets[bulletCount] = bullet;
+        console.log(bullets);
+        bulletCount++;
     }
 }
 // Draw player bullet per frame
 movePlayerBullet = () => {
-    for (let bullet of playerShip.bullets) {
-        bullet.y += bullet.speedY;
-        bullet.draw();
+    const values = Object.values(bullets);
+    for (let value of values) {
+        value.y += value.speedY;
+        value.draw();
     }
 }
+
+isBulletHitEnemy = () => {
+    const enemyKeys = Object.keys(enemies);
+    const bulletKeys = Object.keys(bullets);
+    let enemy;
+    let bullet;
+
+
+    for (enemy of enemyKeys) {
+        // if (enemy.y == undefined) {continue;}
+        for (bullet of bulletKeys) {
+            // if (bullet.y == undefined) {continue;}
+            // console.log(bulletKeys);
+            if (bullets[bullet].y < enemies[enemy].y + 30 && bullets[bullet].x >= enemies[enemy].x && bullets[bullet].x < enemies[enemy].x + 30) {
+                delete enemies[enemy];
+                enemyKeys.splice(enemyKeys.indexOf(enemy),1);
+                delete bullets[bullet];
+                bulletKeys.splice(bulletKeys.indexOf(bullet),1);
+            }
+        }
+    }
+};
 
 const myGameArea = {
     canvas : document.createElement("canvas"),
@@ -141,7 +167,7 @@ const myGameArea = {
         this.key = [];
 
         // Repeat main loop at ~ 60 FPS
-        this.interval = setInterval(updateGameArea,16);
+        this.interval = setInterval(updateGameArea,20);
 
         document.addEventListener("keydown", (event) => {
             myGameArea.key = (myGameArea.key || []);
@@ -154,10 +180,6 @@ const myGameArea = {
         // Press space - code 32 to launch a new bullet
         document.addEventListener("keydown", (event) => {
             myGameArea.key[event.keyCode] = true;
-            // if (event.keyCode === 32) {
-            //     bulletLaunch = 1;
-                // console.log(bulletLaunch);
-            // }
         });
         document.addEventListener("keyup", (event) => {
             myGameArea.key[event.keyCode] = false;
@@ -172,6 +194,14 @@ const myGameArea = {
                 delete enemies[key];
             }
         }
+        // Clear bullets that are out of bounds
+        const bulletKeys = Object.keys(bullets);
+        for (const key of bulletKeys) {
+            if (bullets[key].y < 0) {
+                delete bullets[key];
+            }
+        }
+        // console.log(enemies);
     },
 };
 
@@ -179,15 +209,16 @@ const myGameArea = {
 const updateGameArea = () => {
     myGameArea.clear();
     playerShip.resetSpeed();
+    isBulletHitEnemy();
     generateEnemy();
     generatePlayerBullet();
-    playerShip.isShoot();
+    // playerShip.isShoot();
     movePlayerBullet();
     playerShip.getSpeed();
     playerShip.isCollideWithWall();
     playerShip.updatePosition();
     playerShip.draw();
-
+    
     drawAllEnemies();
     moveAllEnemies();
     frame++;
