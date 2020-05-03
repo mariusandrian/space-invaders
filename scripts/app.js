@@ -3,8 +3,13 @@ let frame = 0;
 let lastEnemyFrame = 0;
 let lastBulletFrame = 0;
 let playerShip;
+let gameOverIndicator = false;
+let enemyMultiplier = 0;
 const enemies = {};
 const bullets = {};
+const enemyBullets = {};
+let enemyBulletCount = 0;
+let currentEnemyCount = 0;
 let enemyCount = 1;
 let bulletCount = 1;
 const arrowKeys = {
@@ -18,6 +23,13 @@ const frameSize = {
     height: 500,
     width: 400
 };
+let currentStage = 0;
+const stages = {
+    enemies: [20,30,40],
+    bulletInterval: [200.150,100],
+    enemySpawnInterval: [100, 80, 70]
+}
+
 let bulletLaunch = 0;
 
 class component {
@@ -30,6 +42,13 @@ class component {
         this.speedY = 0;
         this.color = color;
         this.bullets = [];
+        this.lastBulletShotTime = 0;
+        this.startX = 0;
+        this.startY = 0;
+        this.endX = 0;
+        this.endY = 0;
+        // For enemy bullet calculation
+        this.currentPercent = 0;
     }
     draw () {
         let ctx = myGameArea.context;
@@ -54,12 +73,9 @@ class component {
             this.speedX += 3;
        } 
     }
-    // isShoot () {
-    //     if (myGameArea.key && myGameArea.key[32] === true) {
-            
-    //         // console.log(this.bullets);
-    //     }
-    // }
+  
+    
+
     updatePosition () {
         if (this.isCollideWithWall() === false){
             this.x += this.speedX;
@@ -78,23 +94,48 @@ class component {
         }
         else return false;
     }
+    generateEnemyBullet () {
+        // Limit the interval of shooting for the enemy
+        if (this.lastBulletShotTime === 0 || frame - this.lastBulletShotTime > stages.bulletInterval[currentStage]) {
+            let dx = playerShip.x - this.x;
+            let dy = playerShip.y - this.y;
+            let distance = Math.sqrt(dx * dx + dy * dy);
+            // create bullet
+            let enemyBullet = new component(5, 5, "magenta", this.x, this.y);
+            enemyBullet.speedY = 5;
+            enemyBullet.updatePosition = function() {
+                this.x += 5 * (dx/distance);
+                this.y += 5 * (dy/distance);
+            }
+            enemyBullets[enemyBulletCount] = enemyBullet;
+
+            enemyBulletCount++;
+            this.lastBulletShotTime = frame;
+        } 
+    }
+    
 };
 
 generateEnemy = () => {
     // console.log(frame > 50 && (frame - lastEnemyFrame > 50));
-    if (frame > 50 && (frame - lastEnemyFrame > 10)) {
+    if ((frame > 50 && (frame - lastEnemyFrame > stages.enemySpawnInterval[currentStage]) || enemyMultiplier > 0) && currentEnemyCount <= stages.enemies[currentStage]) {
         // console.log('create enemy');
-        let enemyShip = new component(30, 30, "red", Math.round(Math.random() * (frameSize.width-30)), 0);
-        enemyShip.speedY = Math.round(Math.random() * 4) + 4 ;
+        let originXOfEnemy = Math.round(Math.random() * (frameSize.width-30));
+        let enemyShip = new component(30, 30, "red", originXOfEnemy, 0);
+        
+        enemyShip.speedY = Math.round(Math.random() * 2) + 1;
+        // Math.round(Math.random() * 4) + 4 ;
         enemyShip.updatePosition = function () {
-            this.x += this.speedX;
             this.y += this.speedY;
+            this.x = originXOfEnemy + 0.1 * (frameSize.width * Math.sin(0.05*this.y));
         };
-        console.log('create enemy')
+        // console.log('create enemy')
         enemies[enemyCount] = enemyShip;
         enemyCount++;
         // console.log(enemies);
         lastEnemyFrame = frame;
+        currentEnemyCount++;
+        console.log(currentEnemyCount);
     }
 }
 
@@ -113,14 +154,39 @@ moveAllEnemies = () => {
         object.updatePosition();
     }
 }
+
+generateAllEnemyBullets = () => {
+    const objects = Object.values(enemies);
+    for (const object of objects) {
+        // console.log('check');
+        object.generateEnemyBullet();
+    }
+}
+
+drawAllEnemyBullets = () => {
+    const objects = Object.values(enemyBullets);
+    for (const object of objects) {
+        // console.log('check');
+        object.updatePosition();
+        object.draw();
+    }
+}
+
+// moveAllEnemyBullets = () => {
+//     const objects = Object.values(enemyBullets);
+//     for (const object of objects) {
+//         // console.log('check');
+        
+//         object.moveBullet();
+//     }
+// }
+
 generatePlayerBullet = () => {
-    if ((myGameArea.key[32] && lastBulletFrame === 0) || (myGameArea.key[32] && (frame - lastBulletFrame > 20))) {
-        console.log('test');
-        let bullet = new component(5, 20, "blue",playerShip.x + 13, playerShip.y);
+    if ((myGameArea.key[32] && lastBulletFrame === 0) || (myGameArea.key[32] && (frame - lastBulletFrame > 10))) {
+        let bullet = new component(2, 10, "blue",playerShip.x + 13, playerShip.y);
         bullet.speedY = -10;
         lastBulletFrame = frame;
         bullets[bulletCount] = bullet;
-        console.log(bullets);
         bulletCount++;
     }
 }
@@ -133,25 +199,105 @@ movePlayerBullet = () => {
     }
 }
 
+// moveEnemyBullet = () => {
+//     const values = Object.values(enemyBullets);
+//     for (let value of values) {
+//         value.x + value.speedX;
+//         value.y += value.speedY;
+//         value.draw();
+//     }
+// }
+
+// generateEnemyBullet = () => {
+//     var enemySize = this.getSprite().getSize();
+//     var enemyPosition = this.getPosition();
+//     var playerPosition = ship.getPosition();
+
+//     // calculate direction
+//     var dx = playerPosition.x - enemyPosition.x;
+//     var dy = playerPosition.y - enemyPosition.y;
+//     var length = Math.sqrt(dx * dx + dy * dy);
+//     dx /= length;
+//     dy /= length;
+
+//     // calculate initial and final position for the bullet
+//     var startX = enemyPosition.x + dx * enemySize.x / 2;
+//     var startY = enemyPosition.y + dy * enemySize.y / 2;
+//     var endX = startX + dx * 3000;
+//     var endY = startY + dy * 3000;
+
+//     // create bullet
+//     var sprite = new Sprite('images/enemyBullet.png');
+//     var bullet = new SceneObject(sprite, 0, startX, startY);
+//     wade.addSceneObject(bullet);
+//     bullet.moveTo(endX, endY, 200);
+// }
+
+// Check for collision between Bullet and Enemy and return an array of an array
 isBulletHitEnemy = () => {
     const enemyKeys = Object.keys(enemies);
     const bulletKeys = Object.keys(bullets);
     let enemy;
     let bullet;
 
+    // Array of [[enemy, bullet]] to be deleted later
+    let deleteArray = [];
 
     for (enemy of enemyKeys) {
-        // if (enemy.y == undefined) {continue;}
+
         for (bullet of bulletKeys) {
-            // if (bullet.y == undefined) {continue;}
-            // console.log(bulletKeys);
-            if (bullets[bullet].y < enemies[enemy].y + 30 && bullets[bullet].x >= enemies[enemy].x && bullets[bullet].x < enemies[enemy].x + 30) {
-                delete enemies[enemy];
-                enemyKeys.splice(enemyKeys.indexOf(enemy),1);
-                delete bullets[bullet];
-                bulletKeys.splice(bulletKeys.indexOf(bullet),1);
+
+            if (bullets[bullet].y < enemies[enemy].y + 30 
+                && bullets[bullet].y > enemies[enemy].y
+                && bullets[bullet].x >= enemies[enemy].x 
+                && bullets[bullet].x < enemies[enemy].x + 30) {
+                // Remove enemies and bullets
+                deleteArray.push([enemy,bullet]);
+                console.log(deleteArray);
+                console.log('enemy='+enemy + 'bullet=' + bullet);
+                // enemyKeys.splice(enemyKeys.indexOf(enemy),1);
+                // delete bullets[bullet];
+                // bulletKeys.splice(bulletKeys.indexOf(bullet),1);
             }
         }
+    }
+    return deleteArray;
+};
+
+deleteCollidedEnemyAndBullets = (arrayOfArray) => {
+    if (arrayOfArray.length > 0){
+        arrayOfArray.forEach(element => {
+            delete enemies[element[0]];
+            delete bullets[element[1]];
+        });
+    }
+}
+
+isBulletHitPlayer = () => {
+    const bulletKeys = Object.keys(enemyBullets);
+    let key;
+
+    for (key of bulletKeys) {
+            if (playerShip.y < enemyBullets[key].y + enemyBullets[key].width 
+                && playerShip.y + playerShip.width > enemyBullets[key].y
+                && playerShip.x + playerShip.width > enemyBullets[key].x 
+                && playerShip.x < enemyBullets[key].x + enemyBullets[key].width) {
+                return true
+            }
+    }
+};
+
+isPlayerHitEnemy = () => {
+    const enemyKeys = Object.keys(enemies);
+    let enemy;
+
+    for (enemy of enemyKeys) {
+            if (playerShip.y < enemies[enemy].y + 30 
+                && playerShip.y + playerShip.width > enemies[enemy].y
+                && playerShip.x + playerShip.width >= enemies[enemy].x 
+                && playerShip.x < enemies[enemy].x + 30) {
+                return true
+            }
     }
 };
 
@@ -165,10 +311,7 @@ const myGameArea = {
         
         // Initialize key array as false
         this.key = [];
-
-        // Repeat main loop at ~ 60 FPS
-        this.interval = setInterval(updateGameArea,20);
-
+        // Create event listeners
         document.addEventListener("keydown", (event) => {
             myGameArea.key = (myGameArea.key || []);
             myGameArea.key[event.keyCode] = true;
@@ -184,6 +327,12 @@ const myGameArea = {
         document.addEventListener("keyup", (event) => {
             myGameArea.key[event.keyCode] = false;
         });
+
+        // Repeat main loop at ~ 60 FPS
+
+            this.interval = setInterval(updateGameArea,20);
+
+        
     },
     clear () {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -201,35 +350,58 @@ const myGameArea = {
                 delete bullets[key];
             }
         }
+
+        const enemyBulletKeys = Object.keys(enemyBullets);
+        for (const key of enemyBulletKeys) {
+            if (enemyBullets[key].y > frameSize.height) {
+                delete enemyBullets[key];
+            }
+        }
         // console.log(enemies);
     },
+    gameOver () {
+        clearInterval(this.interval);
+        this.context.font = "20px Arial";
+        this.context.textAlign = "center";
+        this.context.fillText("You ded boiiii", this.canvas.width/2, this.canvas.height/2);
+    },
+    nextStage () {
+        console.log('next stage');
+        this.context.font = "30px Arial";
+        this.context.fillText("Cleared Area", 120, this.canvas.height/2);
+        this.context.fillText("Press Enter to go to next stage", 120, this.canvas.height/2);
+    }
 };
 
 // Main Loop
 const updateGameArea = () => {
-    myGameArea.clear();
-    playerShip.resetSpeed();
-    isBulletHitEnemy();
-    generateEnemy();
-    generatePlayerBullet();
-    // playerShip.isShoot();
-    movePlayerBullet();
-    playerShip.getSpeed();
-    playerShip.isCollideWithWall();
-    playerShip.updatePosition();
-    playerShip.draw();
-    
-    drawAllEnemies();
-    moveAllEnemies();
-    frame++;
-    // if (frame < 100) {
-    //     console.log(frame);
-    // }   
+        myGameArea.clear();
+        playerShip.resetSpeed();
+        deleteCollidedEnemyAndBullets(isBulletHitEnemy());
+        generateEnemy();
+        generateAllEnemyBullets();
+        drawAllEnemyBullets();
+        generatePlayerBullet();
+        movePlayerBullet();
+        playerShip.getSpeed();
+        playerShip.isCollideWithWall();
+        playerShip.updatePosition();
+        playerShip.draw();
+        drawAllEnemies();
+        moveAllEnemies();
+        if (isPlayerHitEnemy() || isBulletHitPlayer()) {
+            myGameArea.gameOver();
+        }
+        if (currentEnemyCount === stages.enemies[currentStage]) {
+            myGameArea.nextStage();
+            currentEnemyCount = 0;
+        }
+        frame++;
 }
 
 // Start game
 const startGame = () => {
     // To put in a initialize function
-    playerShip = new component(30, 30, "green", 190, 420);
+    playerShip = new component(20, 20, "green", 190, 420);
     myGameArea.start();
 }
