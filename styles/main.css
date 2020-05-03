@@ -8,3 +8,9 @@ canvas {
     right: 0;
     margin:auto;
 }
+
+#score-table {
+    font-family: Arial;
+    top: 0;
+    text-align: center;
+}

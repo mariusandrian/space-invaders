@@ -1,7 +1,5 @@
 console.log('connected');
-const enemies = {};
-const bullets = {};
-const enemyBullets = {};
+const enemies = {}, bullets = {}, enemyBullets = {};
 const keyRef = {
     up: 38,
     down: 40,
@@ -10,32 +8,10 @@ const keyRef = {
     enter: 13,
     space: 32
 };
-let gameStart = false;
-let frame = 0;
-let lastEnemyFrame = 0;
-let lastBulletFrame = 0;
-let playerShip;
-let gameOverIndicator = false;
-let enemyMultiplier = 0;
-
-let enemyBulletCount = 0;
-let totalEnemyGenerated = 0;
-let enemyId = 1;
-let bulletCount = 1;
-let nextStage = 0;
-let currentStage = 0;
-
-let isEnterPressed = false;
-const frameSize = {
-    height: 500,
-    width: 400
-};
-
-let waitIndicator = 0;
 const stageConfig = {
-    enemies: [10,20,20],
-    bulletInterval: [200.100,50],
-    enemySpawnInterval: [100, 50, 10]
+    enemies: [10,20,30],
+    bulletInterval: [200.100,40],
+    enemySpawnInterval: [100, 50, 30]
 }
 const init = {
     playerPosition: {
@@ -43,8 +19,25 @@ const init = {
         y: 420
     }
 }
-
-let bulletLaunch = 0;
+const frameSize = {
+    height: 500,
+    width: 400
+};
+let gameStart = false;
+let frame = 0;
+let lastEnemyFrame = 0;
+let lastBulletFrame = 0;
+let playerShip;
+let gameOverIndicator = false;
+let enemyBulletCount = 0;
+let totalEnemyGenerated = 0;
+let enemyId = 1;
+let bulletCount = 1;
+let nextStage = 0;
+let currentStage = 0;
+let userScore = 0;
+let isEnterPressed = false;
+let waitIndicator = 0;
 
 class component {
     constructor (width, height, color, x, y) {
@@ -131,32 +124,30 @@ class component {
 };
 
 generateEnemy = () => {
-    // console.log(frame > 50 && (frame - lastEnemyFrame > 50));
-    if ((frame > 50 && (frame - lastEnemyFrame > stageConfig.enemySpawnInterval[currentStage]) || enemyMultiplier > 0) && totalEnemyGenerated < stageConfig.enemies[currentStage]) {
-        // console.log('create enemy');
+
+    if ((frame > 50 && (frame - lastEnemyFrame > stageConfig.enemySpawnInterval[currentStage])) && totalEnemyGenerated < stageConfig.enemies[currentStage]) {
+
         let originXOfEnemy = Math.round(Math.random() * (frameSize.width-30));
         let enemyShip = new component(30, 30, "red", originXOfEnemy, 0);
         
         enemyShip.speedY = Math.round(Math.random() * 2) + 1;
-        // Math.round(Math.random() * 4) + 4 ;
+
         enemyShip.updatePosition = function () {
             this.y += this.speedY;
             this.x = originXOfEnemy + 0.1 * (frameSize.width * Math.sin(0.05*this.y));
         };
-        // console.log('create enemy')
+
         enemies[enemyId] = enemyShip;
         enemyId++;
-        // console.log(enemies);
+
         lastEnemyFrame = frame;
         totalEnemyGenerated++;
-        console.log(totalEnemyGenerated);
     }
 }
 
 drawAllEnemies = () => {
     const objects = Object.values(enemies);
     for (const object of objects) {
-        // console.log('draw enemy');
         object.draw();
     }
 }
@@ -164,7 +155,6 @@ drawAllEnemies = () => {
 moveAllEnemies = () => {
     const objects = Object.values(enemies);
     for (const object of objects) {
-        // console.log('draw enemy');
         object.updatePosition();
     }
 }
@@ -172,7 +162,6 @@ moveAllEnemies = () => {
 generateAllEnemyBullets = () => {
     const objects = Object.values(enemies);
     for (const object of objects) {
-        // console.log('check');
         object.generateEnemyBullet();
     }
 }
@@ -180,7 +169,6 @@ generateAllEnemyBullets = () => {
 drawAllEnemyBullets = () => {
     const objects = Object.values(enemyBullets);
     for (const object of objects) {
-        // console.log('check');
         object.updatePosition();
         object.draw();
     }
@@ -223,6 +211,7 @@ isBulletHitEnemy = () => {
                 && bullets[bullet].x >= enemies[enemy].x 
                 && bullets[bullet].x < enemies[enemy].x + 30) {
                 deleteArray.push([enemy,bullet]);
+                userScore += 100;
             }
         }
     }
@@ -285,11 +274,9 @@ const myGameArea = {
             myGameArea.key = (myGameArea.key || []);
             myGameArea.key[event.keyCode] = true;
             if (myGameArea.key[keyRef.enter] === true && waitIndicator === 0 && gameStart === true){
-                console.log('continue game');
                 waitIndicator = 1;
             }
             if (myGameArea.key[keyRef.enter] === true && gameStart === false){
-                console.log('Start game');
                 gameStart = true;
                 waitIndicator = 1;
             }
@@ -332,7 +319,6 @@ const myGameArea = {
                 delete enemyBullets[key];
             }
         }
-        // console.log(enemies);
     },
     checkGameOver () {
         if (isPlayerHitEnemy() || isBulletHitPlayer()) {
@@ -340,12 +326,12 @@ const myGameArea = {
         
         this.context.font = "20px Arial";
         this.context.textAlign = "center";
-        this.context.fillText("You ded boiiii", this.canvas.width/2, this.canvas.height/2);
+        this.context.fillText("Game Over", this.canvas.width/2, this.canvas.height/2);
+        this.context.fillText("Refresh page to restart", this.canvas.width/2, this.canvas.height/2 + 40);
         }
     },
     checkNextStage () {
         if (totalEnemyGenerated === stageConfig.enemies[currentStage] && Object.keys(enemies).length === 0 && currentStage < 2) {
-        console.log('next stage');
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.context.font = "20px Arial";
         this.context.fillText("Congrats, you cleared Level " + (currentStage + 1) + " !", this.canvas.width/2, this.canvas.height/2 - 30);
@@ -369,16 +355,12 @@ const myGameArea = {
         // Clear bullets that are out of bounds
         const bulletKeys = Object.keys(bullets);
         for (const key of bulletKeys) {
-
                 delete bullets[key];
-
         }
         // Clear enemy bullets that are out of bounds
         const enemyBulletKeys = Object.keys(enemyBullets);
         for (const key of enemyBulletKeys) {
-
                 delete enemyBullets[key];
-
         }
             this.nextStage = 0;
         }
@@ -386,16 +368,19 @@ const myGameArea = {
     },
     checkWin () {
         if (currentStage === 2 && (totalEnemyGenerated === stageConfig.enemies[currentStage]) && (Object.keys(enemies).length === 0)) {
-            console.log('won');
             clearInterval(this.interval);
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.context.font = "20px Arial";
             this.context.fillText("Congrats, you Won!", this.canvas.width/2, this.canvas.height/2 - 30);
+            this.context.fillText("Your highscore is " + userScore, this.canvas.width/2, this.canvas.height/2 + 30);
         }
     }
 };
 
-
+updateUserScore = () => {
+    let userScoreDisplay = document.getElementById("score")
+    userScoreDisplay.innerText = userScore;
+}
 
 // Main game Loop
 const updateGameArea = () => {
@@ -404,18 +389,24 @@ const updateGameArea = () => {
         myGameArea.clear();
         playerShip.resetSpeed();
         deleteCollidedEnemyAndBullets(isBulletHitEnemy());
-        generateEnemy();
-        generateAllEnemyBullets();
-        drawAllEnemyBullets();
+
+        // Generate and Draw Player Objects
         generatePlayerBullet();
         movePlayerBullet();
         playerShip.getSpeed();
         playerShip.isCollideWithWall();
         playerShip.updatePosition();
         playerShip.draw();
+
+        // Generate and Draw Enemy Objects
+        generateEnemy();
+        generateAllEnemyBullets();
+        drawAllEnemyBullets();
         drawAllEnemies();
         moveAllEnemies();
         
+        // Check game state
+        updateUserScore();
         myGameArea.checkGameOver();
         myGameArea.checkWin();
         myGameArea.checkNextStage();
