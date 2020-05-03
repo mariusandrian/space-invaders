@@ -11,6 +11,11 @@ canvas {
 
 #score-table {
     font-family: Arial;
-    top: 0;
     text-align: center;
+    margin: 0;
+    padding: 0;
+}
+p {
+    margin: 0;
+    padding: 0;
 }

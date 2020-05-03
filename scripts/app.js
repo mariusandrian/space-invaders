@@ -38,6 +38,7 @@ let currentStage = 0;
 let userScore = 0;
 let isEnterPressed = false;
 let waitIndicator = 0;
+let dadJoke;
 
 class component {
     constructor (width, height, color, x, y) {
@@ -323,11 +324,14 @@ const myGameArea = {
     checkGameOver () {
         if (isPlayerHitEnemy() || isBulletHitPlayer()) {
         clearInterval(this.interval);
-        
         this.context.font = "20px Arial";
         this.context.textAlign = "center";
         this.context.fillText("Game Over", this.canvas.width/2, this.canvas.height/2);
         this.context.fillText("Refresh page to restart", this.canvas.width/2, this.canvas.height/2 + 40);
+        this.context.font = "12px Arial"
+        let jokeText = document.getElementById("joke")
+        jokeText.innerText = dadJoke;
+        
         }
     },
     checkNextStage () {
@@ -382,6 +386,23 @@ updateUserScore = () => {
     userScoreDisplay.innerText = userScore;
 }
 
+loadDoc = () => {
+    fetch('https://icanhazdadjoke.com/', {
+        headers: {
+        Accept: 'text/plain'
+        }
+	}).then((response) => {
+        // The API call was successful!
+        return response.text();
+    }).then((data) => {
+        console.log(data);
+        dadJoke = data;
+    }).catch((err) => {
+	// There was an error
+	console.warn('Something went wrong.', err);
+    });
+  }
+
 // Main game Loop
 const updateGameArea = () => {
     if (waitIndicator > 0){
@@ -418,6 +439,7 @@ const updateGameArea = () => {
 // Start game
 const startGame = () => {
     // To put in a initialize function
+    loadDoc();
     playerShip = new component(20, 20, "green", init.playerPosition.x, init.playerPosition.y);
     myGameArea.intro();
     myGameArea.start();
