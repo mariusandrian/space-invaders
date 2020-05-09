@@ -34,7 +34,7 @@ let totalEnemyGenerated = 0;
 let enemyId = 1;
 let bulletCount = 1;
 let nextStage = 0;
-let currentStage = 0;
+let currentStage = 2;
 let userScore = 0;
 let isEnterPressed = false;
 let waitIndicator = 0;
@@ -176,7 +176,7 @@ drawAllEnemyBullets = () => {
 }
 
 generatePlayerBullet = () => {
-    if ((myGameArea.key[keyRef.space] && lastBulletFrame === 0) || (myGameArea.key[keyRef.space] && (frame - lastBulletFrame > 10))) {
+    if ((myGameArea.key[keyRef.space] && lastBulletFrame === 0) || (myGameArea.key[keyRef.space] && (frame - lastBulletFrame > 5))) {
         let bullet = new component(2, 10, "blue",playerShip.x + 13, playerShip.y);
         bullet.speedY = -10;
         lastBulletFrame = frame;
@@ -406,6 +406,7 @@ loadDoc = () => {
 // Main game Loop
 const updateGameArea = () => {
     if (waitIndicator > 0){
+        // Clear game board for redraw and remove unused objects to save memory
         myGameArea.resetAll();
         myGameArea.clear();
         playerShip.resetSpeed();
